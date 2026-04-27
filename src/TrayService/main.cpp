@@ -8,7 +8,10 @@
 #include <string>
 #include <vector>
 
+extern "C"
+{
 #include "TrayServiceRpc.h"
+}
 
 #pragma comment(lib, "advapi32.lib")
 #pragma comment(lib, "rpcrt4.lib")

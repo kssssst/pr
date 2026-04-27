@@ -9,7 +9,10 @@
 #include <cstdlib>
 #include <cwchar>
 
+extern "C"
+{
 #include "TrayServiceRpc.h"
+}
 
 namespace
 {
