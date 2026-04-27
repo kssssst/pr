@@ -9,10 +9,16 @@
 #include <cstdlib>
 #include <cwchar>
 
+extern "C"
+{
+#include "TrayServiceRpc.h"
+}
+
 namespace
 {
 constexpr wchar_t kServiceName[] = L"TrayService";
 constexpr wchar_t kServiceExeName[] = L"TrayService.exe";
+constexpr wchar_t kRpcEndpoint[] = L"TrayServiceRpcAlpc";
 constexpr wchar_t kStopEventName[] = L"Global\\TrayServiceStopEvent";
 
 bool QueryServiceState(SC_HANDLE service, DWORD& state)
@@ -192,6 +198,43 @@ bool IsParentProcessTrayService()
 
 bool StopTrayServiceViaRpc()
 {
+    RPC_WSTR stringBinding = nullptr;
+    handle_t binding = nullptr;
+    bool stopped = false;
+
+    RPC_STATUS status = RpcStringBindingComposeW(
+        nullptr,
+        reinterpret_cast<RPC_WSTR>(const_cast<wchar_t*>(L"ncalrpc")),
+        nullptr,
+        reinterpret_cast<RPC_WSTR>(const_cast<wchar_t*>(kRpcEndpoint)),
+        nullptr,
+        &stringBinding);
+    if (status == RPC_S_OK)
+    {
+        status = RpcBindingFromStringBindingW(stringBinding, &binding);
+        RpcStringFreeW(&stringBinding);
+    }
+
+    if (status == RPC_S_OK)
+    {
+        RpcTryExcept
+        {
+            stopped = RpcStopTrayService(binding, 1) == ERROR_SUCCESS;
+        }
+        RpcExcept(1)
+        {
+            stopped = false;
+        }
+        RpcEndExcept
+
+        RpcBindingFree(&binding);
+    }
+
+    if (stopped)
+    {
+        return true;
+    }
+
     HANDLE stopEvent = OpenEventW(EVENT_MODIFY_STATE, FALSE, kStopEventName);
     if (!stopEvent)
     {

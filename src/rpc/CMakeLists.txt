@@ -33,7 +33,6 @@ add_custom_command(
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${RPC_GENERATED_DIR}"
     COMMAND "${MIDL_COMPILER}"
         /nologo
-        /app_config
         /out "${RPC_GENERATED_DIR}"
         /h "TrayServiceRpc.h"
         /client "stub"
@@ -46,14 +45,13 @@ add_custom_command(
     VERBATIM
 )
 
-add_library(TrayRpcClient OBJECT "${RPC_CLIENT}")
-target_include_directories(TrayRpcClient PUBLIC "${RPC_GENERATED_DIR}")
-set_target_properties(TrayRpcClient PROPERTIES
-    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+add_custom_target(TrayRpcGenerated
+    DEPENDS
+        "${RPC_HEADER}"
+        "${RPC_CLIENT}"
+        "${RPC_SERVER}"
 )
 
-add_library(TrayRpcServer OBJECT "${RPC_SERVER}")
-target_include_directories(TrayRpcServer PUBLIC "${RPC_GENERATED_DIR}")
-set_target_properties(TrayRpcServer PROPERTIES
-    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-)
+set(TRAY_RPC_GENERATED_DIR "${RPC_GENERATED_DIR}" PARENT_SCOPE)
+set(TRAY_RPC_CLIENT_SOURCE "${RPC_CLIENT}" PARENT_SCOPE)
+set(TRAY_RPC_SERVER_SOURCE "${RPC_SERVER}" PARENT_SCOPE)

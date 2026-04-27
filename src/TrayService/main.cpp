@@ -9,6 +9,11 @@
 #include <string>
 #include <vector>
 
+extern "C"
+{
+#include "TrayServiceRpc.h"
+}
+
 #pragma comment(lib, "advapi32.lib")
 #pragma comment(lib, "rpcrt4.lib")
 #pragma comment(lib, "userenv.lib")
@@ -240,6 +245,31 @@ DWORD WINAPI RpcServerThread(LPVOID)
         RPC_C_PROTSEQ_MAX_REQS_DEFAULT,
         reinterpret_cast<RPC_WSTR>(const_cast<wchar_t*>(kRpcEndpoint)),
         nullptr);
+    if (status != RPC_S_OK && status != RPC_S_DUPLICATE_ENDPOINT)
+    {
+        LogDebug(L"RpcServerUseProtseqEpW failed: " + std::to_wstring(status));
+        SetEvent(g_stopEvent);
+        return status;
+    }
+
+    status = RpcServerRegisterIf2(
+        TrayServiceRpc_v1_0_s_ifspec,
+        nullptr,
+        nullptr,
+        RPC_IF_ALLOW_LOCAL_ONLY,
+        RPC_C_LISTEN_MAX_CALLS_DEFAULT,
+        static_cast<unsigned int>(-1),
+        nullptr);
+    if (status != RPC_S_OK)
+    {
+        LogDebug(L"RpcServerRegisterIf2 failed: " + std::to_wstring(status));
+        SetEvent(g_stopEvent);
+        return status;
+    }
+
+    status = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, FALSE);
+    LogDebug(L"RpcServerListen finished: " + std::to_wstring(status));
+    SetEvent(g_stopEvent);
     return status;
 }
 
@@ -317,6 +347,7 @@ void WINAPI ServiceMain(DWORD, LPWSTR*)
 
     RpcMgmtStopServerListening(nullptr);
     WaitForSingleObject(rpcThread, 5000);
+    RpcServerUnregisterIf(TrayServiceRpc_v1_0_s_ifspec, nullptr, FALSE);
 
     StopAllGuiProcesses();
 
@@ -327,6 +358,31 @@ void WINAPI ServiceMain(DWORD, LPWSTR*)
 
     SetStatus(SERVICE_STOPPED);
 }
+}
+
+extern "C" void __RPC_FAR* __RPC_USER midl_user_allocate(size_t size)
+{
+    return std::malloc(size);
+}
+
+extern "C" void __RPC_USER midl_user_free(void __RPC_FAR* pointer)
+{
+    std::free(pointer);
+}
+
+extern "C" long RpcStopTrayService(handle_t, long requestCode)
+{
+    if (requestCode != 1)
+    {
+        return ERROR_INVALID_PARAMETER;
+    }
+
+    if (g_stopEvent)
+    {
+        SetEvent(g_stopEvent);
+    }
+    RpcMgmtStopServerListening(nullptr);
+    return ERROR_SUCCESS;
 }
 
 int wmain()

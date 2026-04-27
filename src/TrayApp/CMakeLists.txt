@@ -12,6 +12,7 @@ set(TRAYAPP_SOURCES
     MainWindow.h
     ServiceClient.cpp
     ServiceClient.h
+    ${TRAY_RPC_CLIENT_SOURCE}
     pch.cpp
     pch.h
 )
@@ -49,7 +50,10 @@ target_compile_definitions(TrayApp PRIVATE
 target_include_directories(TrayApp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
+    ${TRAY_RPC_GENERATED_DIR}
 )
+
+add_dependencies(TrayApp TrayRpcGenerated)
 
 # Выходной файл
 set_target_properties(TrayApp PROPERTIES
