@@ -33,6 +33,7 @@ add_custom_command(
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${RPC_GENERATED_DIR}"
     COMMAND "${MIDL_COMPILER}"
         /nologo
+        /app_config
         /out "${RPC_GENERATED_DIR}"
         /h "TrayServiceRpc.h"
         /client "stub"
