@@ -13,13 +13,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup CMake
-        uses: jwlawson/actions-setup-cmake@v2
-        with:
-          cmake-version: '3.27'
-
       - name: Configure CMake for ARM64
         run: |
+          cmake --version
           cmake -S . -B build `
             -G "Visual Studio 17 2022" `
             -A ARM64 `
