@@ -10,6 +10,8 @@ set(TRAYAPP_SOURCES
     main.cpp
     MainWindow.cpp
     MainWindow.h
+    ServiceClient.cpp
+    ServiceClient.h
     pch.cpp
     pch.h
 )
@@ -20,10 +22,13 @@ add_executable(TrayApp WIN32 ${TRAYAPP_SOURCES})
 # Подключаемые библиотеки
 target_link_libraries(TrayApp
     PRIVATE
+        TrayRpcClient
         shell32              # Shell API (иконки в трее)
         user32               # User API (окна, сообщения)
         gdi32                # Graphics Device Interface
         comctl32             # Common Controls
+        advapi32             # Service Control Manager
+        rpcrt4               # Windows RPC
 )
 
 # Параметры компиляции

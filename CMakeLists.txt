@@ -4,7 +4,7 @@ if(POLICY CMP0091)
     cmake_policy(SET CMP0091 NEW)
 endif()
 
-project(TrayApp VERSION 1.0.0 LANGUAGES CXX)
+project(TrayApp VERSION 1.0.0 LANGUAGES C CXX)
 
 # Установка стандарта C++
 set(CMAKE_CXX_STANDARD 17)
@@ -47,7 +47,8 @@ message(STATUS "C++ Standard: C++${CMAKE_CXX_STANDARD}")
 message(STATUS "====================================")
 message(STATUS "")
 
-# Добавляем GUI-приложение
+add_subdirectory(src/rpc)
+add_subdirectory(src/TrayService)
 add_subdirectory(src/TrayApp)
 
 message(STATUS "TrayApp configuration completed successfully!")

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "MainWindow.h"
+#include "ServiceClient.h"
 #include <windows.h>
 #include <shellapi.h>
 #include <commctrl.h>
@@ -187,12 +188,11 @@ void MainWindow::HideMainWindow()
 
 void MainWindow::HandleExit()
 {
-    Shell_NotifyIconW(NIM_DELETE, &m_nid);
-    if (m_hWnd)
+    if (!StopTrayServiceViaRpc())
     {
-        DestroyWindow(m_hWnd);
+        MessageBoxW(m_hWnd, L"Не удалось остановить службу TrayService.", L"TrayApp", MB_ICONERROR);
+        return;
     }
-    PostQuitMessage(0);
 }
 
 void MainWindow::RestoreTrayIcon()

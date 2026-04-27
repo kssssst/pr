@@ -35,7 +35,8 @@ jobs:
         run: |
           Write-Host "=== Checking for generated binaries ===" -ForegroundColor Green
           $requiredFiles = @(
-            'build\bin\TrayApp.exe'
+            'build\bin\TrayApp.exe',
+            'build\bin\TrayService.exe'
           )
 
           foreach ($file in $requiredFiles) {
@@ -62,6 +63,11 @@ jobs:
 
           Write-Host "Copying executables..."
           Copy-Item build\bin\TrayApp.exe TrayApp\ -Verbose
+          Copy-Item build\bin\TrayService.exe TrayApp\ -Verbose
+
+          Write-Host "Copying service scripts..."
+          Copy-Item install_service.bat TrayApp\ -Verbose
+          Copy-Item uninstall_service.bat TrayApp\ -Verbose
 
           Write-Host "Copying documentation..."
           $docs = @(
@@ -105,18 +111,24 @@ jobs:
           body: |
             ## TrayApp Release
 
-            Tray GUI application ready for deployment on Windows 11 ARM64.
+            Tray GUI application and Windows service ready for deployment on Windows 11 ARM64.
 
             ### Contents:
             - TrayApp.exe - GUI application with tray icon support
+            - TrayService.exe - Windows service that owns GUI app lifetime
+            - install_service.bat - Service installation script
+            - uninstall_service.bat - Service removal script
             - Documentation files
 
             ### Installation:
             1. Extract all files to desired location
-            2. Execute `TrayApp.exe`
+            2. Run `install_service.bat` with administrator privileges
+            3. Execute `TrayApp.exe`
 
             ### Features:
             - System tray icon with context menu
+            - Windows service launches TrayApp in user sessions
+            - Local Windows RPC over ALPC
             - Single instance check (named mutex)
             - Auto-recovery on taskbar recreation
             - Clean exit mechanism
