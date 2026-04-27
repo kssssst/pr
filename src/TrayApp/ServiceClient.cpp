@@ -14,6 +14,8 @@ extern "C"
 #include "TrayServiceRpc.h"
 }
 
+extern "C" handle_t TrayServiceRpcBinding = nullptr;
+
 namespace
 {
 constexpr wchar_t kServiceName[] = L"TrayService";
@@ -219,7 +221,8 @@ bool StopTrayServiceViaRpc()
     {
         RpcTryExcept
         {
-            stopped = RpcStopTrayService(binding, 1) == ERROR_SUCCESS;
+            TrayServiceRpcBinding = binding;
+            stopped = RpcStopTrayService(1) == ERROR_SUCCESS;
         }
         RpcExcept(1)
         {
@@ -228,6 +231,7 @@ bool StopTrayServiceViaRpc()
         RpcEndExcept
 
         RpcBindingFree(&binding);
+        TrayServiceRpcBinding = nullptr;
     }
 
     if (stopped)
@@ -241,7 +245,7 @@ bool StopTrayServiceViaRpc()
         return false;
     }
 
-    const bool stopped = SetEvent(stopEvent) != FALSE;
+    stopped = SetEvent(stopEvent) != FALSE;
     CloseHandle(stopEvent);
     return stopped;
 }

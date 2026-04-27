@@ -370,7 +370,7 @@ extern "C" void __RPC_USER midl_user_free(void __RPC_FAR* pointer)
     std::free(pointer);
 }
 
-extern "C" long RpcStopTrayService(handle_t, long requestCode)
+extern "C" long RpcStopTrayService(long requestCode)
 {
     if (requestCode != 1)
     {

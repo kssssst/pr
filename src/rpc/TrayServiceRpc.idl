@@ -5,5 +5,5 @@
 ]
 interface TrayServiceRpc
 {
-    long RpcStopTrayService([in] handle_t binding, [in] long requestCode);
+    long RpcStopTrayService([in] long requestCode);
 }

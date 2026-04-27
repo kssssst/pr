@@ -21,6 +21,7 @@ endif()
 
 set(RPC_GENERATED_DIR "${CMAKE_BINARY_DIR}/generated/rpc")
 set(RPC_IDL "${CMAKE_CURRENT_SOURCE_DIR}/TrayServiceRpc.idl")
+set(RPC_ACF "${CMAKE_CURRENT_SOURCE_DIR}/TrayServiceRpc.acf")
 set(RPC_HEADER "${RPC_GENERATED_DIR}/TrayServiceRpc.h")
 set(RPC_CLIENT "${RPC_GENERATED_DIR}/TrayServiceRpc_c.c")
 set(RPC_SERVER "${RPC_GENERATED_DIR}/TrayServiceRpc_s.c")
@@ -35,12 +36,13 @@ add_custom_command(
         /nologo
         /out "${RPC_GENERATED_DIR}"
         /h "TrayServiceRpc.h"
+        /acf "${RPC_ACF}"
         /client "stub"
         /server "stub"
         /cstub "TrayServiceRpc_c.c"
         /sstub "TrayServiceRpc_s.c"
         "${RPC_IDL}"
-    DEPENDS "${RPC_IDL}"
+    DEPENDS "${RPC_IDL}" "${RPC_ACF}"
     COMMENT "Generating Windows RPC stubs"
     VERBATIM
 )
