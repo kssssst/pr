@@ -32,6 +32,8 @@ cmake --build build --config Release
 build\bin\TrayApp.exe
 ```
 
+Проект собирается со статическим MSVC runtime, поэтому `TrayApp.exe` не должен требовать отдельной установки Visual C++ Redistributable.
+
 ## Запуск
 
 Запустите `TrayApp.exe`. Приложение добавит иконку в трей и продолжит работать, пока не будет выбрана команда `Выход` в контекстном меню.
