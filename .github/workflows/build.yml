@@ -1,0 +1,148 @@
+name: Build TrayApp
+
+'on':
+  push:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-11-arm
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.27'
+
+      - name: Configure CMake for ARM64
+        run: |
+          cmake -S . -B build `
+            -G "Visual Studio 17 2022" `
+            -A ARM64 `
+            -DCMAKE_BUILD_TYPE=Release
+        shell: powershell
+
+      - name: Build Release
+        run: |
+          cmake --build build --config Release --verbose
+        shell: powershell
+
+      - name: Verify generated files and binaries
+        run: |
+          Write-Host "=== Checking for generated binaries ===" -ForegroundColor Green
+          $requiredFiles = @(
+            'build\bin\TrayApp.exe',
+            'build\bin\TrayService.exe'
+          )
+
+          foreach ($file in $requiredFiles) {
+            if (-not (Test-Path $file)) {
+              Write-Error "$file not found!" -ErrorAction Stop
+              exit 1
+            }
+            $fileInfo = Get-Item $file
+            Write-Host "Found $file (Size: $([math]::Round($fileInfo.Length / 1KB, 2)) KB)" -ForegroundColor Green
+          }
+
+          Write-Host "`n=== Verifying binaries ===" -ForegroundColor Green
+          Get-Item build\bin\*.exe | ForEach-Object {
+            Write-Host "  - $($_.Name): $([math]::Round($_.Length / 1MB, 2)) MB" -ForegroundColor Cyan
+          }
+        shell: powershell
+
+      - name: Create TrayApp package
+        if: success()
+        run: |
+          Write-Host "Creating deployment package..." -ForegroundColor Green
+
+          New-Item -ItemType Directory -Force -Path TrayApp | Out-Null
+
+          Write-Host "Copying executables..."
+          Copy-Item build\bin\TrayApp.exe TrayApp\ -Verbose
+          Copy-Item build\bin\TrayService.exe TrayApp\ -Verbose
+
+          Write-Host "Copying service management scripts..."
+          Copy-Item install_service.bat TrayApp\ -Verbose
+          Copy-Item uninstall_service.bat TrayApp\ -Verbose
+
+          Write-Host "Copying documentation..."
+          $docs = @(
+            'README.md',
+            'BUILDING.md',
+            'ARCHITECTURE.md',
+            'REQUIREMENTS.md'
+          )
+
+          foreach ($doc in $docs) {
+            if (Test-Path $doc) {
+              Copy-Item $doc TrayApp\ -Verbose
+            } else {
+              Write-Host "Skipping missing $doc" -ForegroundColor Yellow
+            }
+          }
+
+          Write-Host "`n=== Package contents ===" -ForegroundColor Green
+          Get-ChildItem TrayApp | ForEach-Object {
+            Write-Host "  - $($_.Name)" -ForegroundColor Yellow
+          }
+        shell: powershell
+
+      - name: Upload TrayApp artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrayApp-Release
+          path: TrayApp/
+          retention-days: 90
+          compression-level: 6
+
+      - name: Create Release (if tagged)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            ## TrayApp Release
+
+            Binaries and service files ready for deployment on Windows 11 ARM64.
+
+            ### Contents:
+            - TrayApp.exe - Main application with tray icon support
+            - TrayService.exe - Background Windows Service
+            - install_service.bat - Service installation script
+            - uninstall_service.bat - Service removal script
+            - Documentation files
+
+            ### Installation:
+            1. Extract all files to desired location
+            2. Run `install_service.bat` with administrator privileges
+            3. Execute `TrayApp.exe`
+
+            ### Features:
+            - System tray icon with context menu
+            - Single instance check (named mutex)
+            - Auto-recovery on taskbar recreation
+            - Background operation when window is closed
+            - Clean exit mechanism
+
+            For more information, see README.md
+          draft: false
+          prerelease: false
+
+      - name: Build summary
+        if: always()
+        run: |
+          Write-Host "`n=== Build Summary ===" -ForegroundColor Cyan
+          Write-Host "Build Status: ${{ job.status }}" -ForegroundColor $(if ('${{ job.status }}' -eq 'success') { 'Green' } else { 'Red' })
+          Write-Host "Platform: ARM64" -ForegroundColor Yellow
+          Write-Host "Configuration: Release" -ForegroundColor Yellow
+          Write-Host "Generator: Visual Studio 17 2022" -ForegroundColor Yellow
+          Write-Host "`nFor more information, see build logs above." -ForegroundColor Gray
+        shell: powershell
