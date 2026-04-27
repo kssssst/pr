@@ -11,6 +11,10 @@ if not exist "%SERVICE_EXE%" (
 
 sc query "%SERVICE_NAME%" >nul 2>&1
 if %errorlevel% equ 0 (
+    echo Stopping existing service...
+    sc stop "%SERVICE_NAME%" >nul 2>&1
+    timeout /t 3 /nobreak >nul
+
     echo Service already exists. Updating binary path...
     sc config "%SERVICE_NAME%" binPath= "\"%SERVICE_EXE%\"" start= auto
 ) else (

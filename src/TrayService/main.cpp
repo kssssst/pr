@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <rpc.h>
+#include <sddl.h>
 #include <userenv.h>
 #include <wtsapi32.h>
 
@@ -32,6 +33,22 @@ struct AppProcess
 };
 
 std::vector<AppProcess> g_processes;
+
+void LogDebug(const std::wstring& message)
+{
+    OutputDebugStringW((L"[TrayService] " + message + L"\n").c_str());
+}
+
+PSECURITY_DESCRIPTOR CreateInteractiveUsersEventSecurityDescriptor()
+{
+    PSECURITY_DESCRIPTOR descriptor = nullptr;
+    ConvertStringSecurityDescriptorToSecurityDescriptorW(
+        L"D:(A;;GA;;;SY)(A;;GA;;;BA)(A;;GRGW;;;IU)",
+        SDDL_REVISION_1,
+        &descriptor,
+        nullptr);
+    return descriptor;
+}
 
 void SetStatus(DWORD state, DWORD win32ExitCode = NO_ERROR, DWORD waitHint = 0)
 {
@@ -109,6 +126,7 @@ bool LaunchGuiForSession(DWORD sessionId)
     HANDLE userToken = nullptr;
     if (!WTSQueryUserToken(sessionId, &userToken))
     {
+        LogDebug(L"WTSQueryUserToken failed for session " + std::to_wstring(sessionId) + L": " + std::to_wstring(GetLastError()));
         return false;
     }
 
@@ -117,13 +135,14 @@ bool LaunchGuiForSession(DWORD sessionId)
         userToken,
         TOKEN_ASSIGN_PRIMARY | TOKEN_DUPLICATE | TOKEN_QUERY | TOKEN_ADJUST_DEFAULT | TOKEN_ADJUST_SESSIONID,
         nullptr,
-        SecurityIdentification,
+        SecurityImpersonation,
         TokenPrimary,
         &primaryToken);
     CloseHandle(userToken);
 
     if (!duplicated)
     {
+        LogDebug(L"DuplicateTokenEx failed for session " + std::to_wstring(sessionId) + L": " + std::to_wstring(GetLastError()));
         return false;
     }
 
@@ -145,7 +164,7 @@ bool LaunchGuiForSession(DWORD sessionId)
         nullptr,
         nullptr,
         FALSE,
-        CREATE_UNICODE_ENVIRONMENT,
+        CREATE_UNICODE_ENVIRONMENT | CREATE_NEW_CONSOLE,
         environment,
         GetModuleDirectory().c_str(),
         &startupInfo,
@@ -159,6 +178,7 @@ bool LaunchGuiForSession(DWORD sessionId)
 
     if (!created)
     {
+        LogDebug(L"CreateProcessAsUserW failed for session " + std::to_wstring(sessionId) + L": " + std::to_wstring(GetLastError()));
         return false;
     }
 
@@ -168,6 +188,7 @@ bool LaunchGuiForSession(DWORD sessionId)
     g_processes.push_back({ sessionId, processInfo.dwProcessId, processInfo.hProcess });
     LeaveCriticalSection(&g_processLock);
 
+    LogDebug(L"Started TrayApp in session " + std::to_wstring(sessionId) + L", pid " + std::to_wstring(processInfo.dwProcessId));
     return true;
 }
 
@@ -183,7 +204,8 @@ void LaunchGuiForExistingSessions()
 
     for (DWORD i = 0; i < count; ++i)
     {
-        if (sessions[i].SessionId != 0)
+        if (sessions[i].SessionId != 0 &&
+            (sessions[i].State == WTSActive || sessions[i].State == WTSConnected))
         {
             LaunchGuiForSession(sessions[i].SessionId);
         }
@@ -259,7 +281,16 @@ void WINAPI ServiceMain(DWORD, LPWSTR*)
     SetStatus(SERVICE_START_PENDING, NO_ERROR, 3000);
 
     InitializeCriticalSection(&g_processLock);
-    g_stopEvent = CreateEventW(nullptr, TRUE, FALSE, kStopEventName);
+    PSECURITY_DESCRIPTOR eventSecurityDescriptor = CreateInteractiveUsersEventSecurityDescriptor();
+    SECURITY_ATTRIBUTES eventSecurityAttributes = {};
+    eventSecurityAttributes.nLength = sizeof(eventSecurityAttributes);
+    eventSecurityAttributes.lpSecurityDescriptor = eventSecurityDescriptor;
+
+    g_stopEvent = CreateEventW(&eventSecurityAttributes, TRUE, FALSE, kStopEventName);
+    if (eventSecurityDescriptor)
+    {
+        LocalFree(eventSecurityDescriptor);
+    }
     if (!g_stopEvent)
     {
         SetStatus(SERVICE_STOPPED, GetLastError());

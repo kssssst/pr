@@ -109,10 +109,7 @@ bool EnsureServiceRunningOrExit()
         return false;
     }
 
-    SC_HANDLE service = OpenServiceW(
-        scm,
-        kServiceName,
-        SERVICE_QUERY_STATUS | SERVICE_START);
+    SC_HANDLE service = OpenServiceW(scm, kServiceName, SERVICE_QUERY_STATUS);
     if (!service)
     {
         CloseServiceHandle(scm);
@@ -128,9 +125,28 @@ bool EnsureServiceRunningOrExit()
         return true;
     }
 
-    if (!stateRead || state == SERVICE_STOPPED)
+    if (stateRead && state != SERVICE_STOPPED)
     {
-        StartServiceW(service, 0, nullptr);
+        const bool running = WaitForServiceState(service, SERVICE_RUNNING, 30000);
+        CloseServiceHandle(service);
+        CloseServiceHandle(scm);
+        return running;
+    }
+
+    CloseServiceHandle(service);
+
+    service = OpenServiceW(scm, kServiceName, SERVICE_QUERY_STATUS | SERVICE_START);
+    if (!service)
+    {
+        CloseServiceHandle(scm);
+        return false;
+    }
+
+    if (!StartServiceW(service, 0, nullptr) && GetLastError() != ERROR_SERVICE_ALREADY_RUNNING)
+    {
+        CloseServiceHandle(service);
+        CloseServiceHandle(scm);
+        return false;
     }
 
     const bool running = WaitForServiceState(service, SERVICE_RUNNING, 30000);
