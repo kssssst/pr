@@ -14,6 +14,8 @@ extern "C"
 #include "TrayServiceRpc.h"
 }
 
+extern "C" handle_t TrayServiceRpcBinding = nullptr;
+
 namespace
 {
 constexpr wchar_t kServiceName[] = L"TrayService";
@@ -182,7 +184,6 @@ bool IsParentProcessTrayService()
 bool StopTrayServiceViaRpc()
 {
     RPC_WSTR stringBinding = nullptr;
-    handle_t binding = nullptr;
 
     RPC_STATUS status = RpcStringBindingComposeW(
         nullptr,
@@ -196,7 +197,7 @@ bool StopTrayServiceViaRpc()
         return false;
     }
 
-    status = RpcBindingFromStringBindingW(stringBinding, &binding);
+    status = RpcBindingFromStringBindingW(stringBinding, &TrayServiceRpcBinding);
     RpcStringFreeW(&stringBinding);
     if (status != RPC_S_OK)
     {
@@ -206,7 +207,7 @@ bool StopTrayServiceViaRpc()
     bool stopped = true;
     RpcTryExcept
     {
-        RpcStopTrayService(binding);
+        RpcStopTrayService();
     }
     RpcExcept(1)
     {
@@ -214,7 +215,7 @@ bool StopTrayServiceViaRpc()
     }
     RpcEndExcept
 
-    RpcBindingFree(&binding);
+    RpcBindingFree(&TrayServiceRpcBinding);
     return stopped;
 }
 }

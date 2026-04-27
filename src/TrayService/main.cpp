@@ -332,7 +332,7 @@ extern "C" void __RPC_USER midl_user_free(void __RPC_FAR* pointer)
     std::free(pointer);
 }
 
-extern "C" void RpcStopTrayService(handle_t)
+extern "C" void RpcStopTrayService()
 {
     if (g_stopEvent)
     {
