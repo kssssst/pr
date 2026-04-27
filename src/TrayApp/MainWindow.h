@@ -27,7 +27,6 @@ namespace trayapp
     private:
         HWND m_hWnd = nullptr;
         HWND m_messageWindow = nullptr;
-        HWND m_exitButton = nullptr;
         NOTIFYICONDATA m_nid = {};
         bool m_isVisible = false;
     };
