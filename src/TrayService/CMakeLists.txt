@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(TrayService
     main.cpp
+    $<TARGET_OBJECTS:TrayRpcServer>
 )
 
 target_compile_definitions(TrayService PRIVATE

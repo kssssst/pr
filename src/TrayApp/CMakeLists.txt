@@ -12,6 +12,7 @@ set(TRAYAPP_SOURCES
     MainWindow.h
     ServiceClient.cpp
     ServiceClient.h
+    $<TARGET_OBJECTS:TrayRpcClient>
     pch.cpp
     pch.h
 )

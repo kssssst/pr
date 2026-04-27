@@ -45,16 +45,14 @@ add_custom_command(
     VERBATIM
 )
 
-add_library(TrayRpcClient STATIC "${RPC_CLIENT}")
+add_library(TrayRpcClient OBJECT "${RPC_CLIENT}")
 target_include_directories(TrayRpcClient PUBLIC "${RPC_GENERATED_DIR}")
-target_link_libraries(TrayRpcClient PUBLIC rpcrt4)
 set_target_properties(TrayRpcClient PROPERTIES
     MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
 )
 
-add_library(TrayRpcServer STATIC "${RPC_SERVER}")
+add_library(TrayRpcServer OBJECT "${RPC_SERVER}")
 target_include_directories(TrayRpcServer PUBLIC "${RPC_GENERATED_DIR}")
-target_link_libraries(TrayRpcServer PUBLIC rpcrt4)
 set_target_properties(TrayRpcServer PROPERTIES
     MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
 )
