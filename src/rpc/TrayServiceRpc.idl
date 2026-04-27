@@ -1,0 +1,9 @@
+[
+    uuid(8f5a6d4e-4438-4f3f-a12c-621947978a21),
+    version(1.0),
+    pointer_default(unique)
+]
+interface TrayServiceRpc
+{
+    long RpcStopTrayService([in] long requestCode);
+}

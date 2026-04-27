@@ -1,23 +1,20 @@
-TrayApp - Windows GUI tray application
-=====================================
+TrayApp + TrayService
+=====================
 
-TrayApp is a single Windows GUI application.
-
-Features:
-- tray icon on startup
-- left click opens the main window
-- right click opens the context menu
-- context menu commands: Open and Exit
-- single running instance via named mutex
-- tray icon recovery after taskbar recreation
-
-Build on Windows:
+Build:
 
 cmake -S . -B build -G "Visual Studio 17 2022" -A ARM64
 cmake --build build --config Release
 
-Result:
+Artifacts:
 
 build\bin\TrayApp.exe
+build\bin\TrayService.exe
 
-GitHub Actions builds TrayApp.exe on every push to any branch.
+Install the service as administrator:
+
+install_service.bat
+
+The GUI communicates with the service through Windows RPC over local ncalrpc
+transport (ALPC). The service owns GUI lifetime and starts TrayApp.exe in user
+terminal sessions.

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "MainWindow.h"
+#include "ServiceClient.h"
 #include <windows.h>
 
 using namespace trayapp;
@@ -10,6 +11,17 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
     UNREFERENCED_PARAMETER(nCmdShow);
+
+    if (!EnsureServiceRunningOrExit())
+    {
+        MessageBoxW(nullptr, L"Не удалось запустить службу TrayService.", L"TrayApp", MB_ICONERROR);
+        return 1;
+    }
+
+    if (!IsParentProcessTrayService())
+    {
+        return 0;
+    }
 
     // Проверяем, запущено ли приложение уже
     HANDLE hMutex = CreateMutexW(nullptr, FALSE, L"TrayApp_SingleInstance");

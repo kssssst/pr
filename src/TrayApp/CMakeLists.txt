@@ -6,10 +6,15 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Источники приложения
+set_source_files_properties(${TRAY_RPC_CLIENT_SOURCE} PROPERTIES GENERATED TRUE)
+
 set(TRAYAPP_SOURCES
     main.cpp
     MainWindow.cpp
     MainWindow.h
+    ServiceClient.cpp
+    ServiceClient.h
+    ${TRAY_RPC_CLIENT_SOURCE}
     pch.cpp
     pch.h
 )
@@ -24,6 +29,8 @@ target_link_libraries(TrayApp
         user32               # User API (окна, сообщения)
         gdi32                # Graphics Device Interface
         comctl32             # Common Controls
+        advapi32             # Service Control Manager
+        rpcrt4               # Windows RPC
 )
 
 # Параметры компиляции
@@ -45,7 +52,10 @@ target_compile_definitions(TrayApp PRIVATE
 target_include_directories(TrayApp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
+    ${TRAY_RPC_GENERATED_DIR}
 )
+
+add_dependencies(TrayApp TrayRpcGenerated)
 
 # Выходной файл
 set_target_properties(TrayApp PROPERTIES
