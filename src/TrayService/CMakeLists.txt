@@ -5,6 +5,8 @@ project(TrayService)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set_source_files_properties(${TRAY_RPC_SERVER_SOURCE} PROPERTIES GENERATED TRUE)
+
 add_executable(TrayService
     main.cpp
     ${TRAY_RPC_SERVER_SOURCE}

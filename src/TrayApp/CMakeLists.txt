@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Источники приложения
+set_source_files_properties(${TRAY_RPC_CLIENT_SOURCE} PROPERTIES GENERATED TRUE)
+
 set(TRAYAPP_SOURCES
     main.cpp
     MainWindow.cpp
