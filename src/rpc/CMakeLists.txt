@@ -26,6 +26,13 @@ set(RPC_HEADER "${RPC_GENERATED_DIR}/TrayServiceRpc.h")
 set(RPC_CLIENT "${RPC_GENERATED_DIR}/TrayServiceRpc_c.c")
 set(RPC_SERVER "${RPC_GENERATED_DIR}/TrayServiceRpc_s.c")
 
+set(RPC_MIDL_ENV "x64")
+if(CMAKE_GENERATOR_PLATFORM MATCHES "ARM64")
+    set(RPC_MIDL_ENV "arm64")
+elseif(CMAKE_GENERATOR_PLATFORM MATCHES "Win32|x86")
+    set(RPC_MIDL_ENV "win32")
+endif()
+
 add_custom_command(
     OUTPUT
         "${RPC_HEADER}"
@@ -34,6 +41,7 @@ add_custom_command(
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${RPC_GENERATED_DIR}"
     COMMAND "${MIDL_COMPILER}"
         /nologo
+        /env "${RPC_MIDL_ENV}"
         /out "${RPC_GENERATED_DIR}"
         /h "TrayServiceRpc.h"
         /acf "${RPC_ACF}"
