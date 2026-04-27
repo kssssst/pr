@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="TrayApp.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:TrayApp"
+    Title="TrayApp - Приложение в трее"
+    Width="400"
+    Height="300">
+    
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <StackPanel Padding="20" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10">
+            <TextBlock 
+                Text="TrayApp" 
+                FontSize="32" 
+                FontWeight="Bold"
+                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+            
+            <TextBlock 
+                Text="Приложение успешно запущено!"
+                FontSize="16"/>
+            
+            <TextBlock 
+                Text="Иконка приложения находится в области уведомлений."
+                FontSize="14"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+            
+            <Button 
+                Content="Свернуть в трей" 
+                Click="OnMinimizeClick"
+                HorizontalAlignment="Center"
+                Padding="20,10"/>
+        </StackPanel>
+    </Grid>
+    
+    <Window.MenuBar>
+        <MenuBar>
+            <MenuBarItem Title="Файл">
+                <MenuFlyoutItem Text="Выход" Click="OnExitClick"/>
+            </MenuBarItem>
+        </MenuBar>
+    </Window.MenuBar>
+</Window>

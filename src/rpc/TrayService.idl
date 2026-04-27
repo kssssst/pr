@@ -1,0 +1,27 @@
+[
+  uuid(12345678-1234-1234-1234-123456789ABC),
+  version(1.0),
+  pointer_default(unique)
+]
+interface ITrayService
+{
+  typedef [string] wchar_t *LPWSTR;
+  
+  [in] handle_t hBinding,
+  void ShowWindow(void);
+  
+  [in] handle_t hBinding,
+  void HideWindow(void);
+  
+  [in] handle_t hBinding,
+  void ExitApp(void);
+};
+
+[
+  uuid(87654321-4321-4321-4321-CBA987654321),
+  version(1.0)
+]
+interface TrayServiceBinding
+{
+  typedef [string] wchar_t *LPWSTR;
+};
