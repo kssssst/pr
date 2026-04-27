@@ -207,7 +207,7 @@ bool StopTrayServiceViaRpc()
     bool stopped = true;
     RpcTryExcept
     {
-        RpcStopTrayService();
+        stopped = RpcStopTrayService(1) == 0;
     }
     RpcExcept(1)
     {

@@ -22,7 +22,6 @@ endif()
 
 target_link_libraries(TrayService
     PRIVATE
-        TrayRpcServer
         advapi32
         userenv
         wtsapi32

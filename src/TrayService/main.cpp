@@ -332,13 +332,19 @@ extern "C" void __RPC_USER midl_user_free(void __RPC_FAR* pointer)
     std::free(pointer);
 }
 
-extern "C" void RpcStopTrayService()
+extern "C" long RpcStopTrayService(long requestCode)
 {
+    if (requestCode != 1)
+    {
+        return ERROR_INVALID_PARAMETER;
+    }
+
     if (g_stopEvent)
     {
         SetEvent(g_stopEvent);
     }
     RpcMgmtStopServerListening(nullptr);
+    return ERROR_SUCCESS;
 }
 
 int wmain()

@@ -23,7 +23,6 @@ add_executable(TrayApp WIN32 ${TRAYAPP_SOURCES})
 # Подключаемые библиотеки
 target_link_libraries(TrayApp
     PRIVATE
-        TrayRpcClient
         shell32              # Shell API (иконки в трее)
         user32               # User API (окна, сообщения)
         gdi32                # Graphics Device Interface

@@ -6,5 +6,5 @@
 ]
 interface TrayServiceRpc
 {
-    void RpcStopTrayService();
+    long RpcStopTrayService([in] long requestCode);
 }
