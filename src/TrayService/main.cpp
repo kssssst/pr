@@ -23,6 +23,7 @@ constexpr wchar_t kStopEventName[] = L"Global\\TrayServiceStopEvent";
 SERVICE_STATUS_HANDLE g_statusHandle = nullptr;
 SERVICE_STATUS g_status = {};
 HANDLE g_stopEvent = nullptr;
+HANDLE g_instanceMutex = nullptr;
 CRITICAL_SECTION g_processLock;
 
 struct AppProcess
@@ -297,6 +298,7 @@ void WINAPI ServiceMain(DWORD, LPWSTR*)
         DeleteCriticalSection(&g_processLock);
         return;
     }
+    ResetEvent(g_stopEvent);
 
     HANDLE rpcThread = CreateThread(nullptr, 0, RpcServerThread, nullptr, 0, nullptr);
     if (!rpcThread)
@@ -320,6 +322,7 @@ void WINAPI ServiceMain(DWORD, LPWSTR*)
 
     CloseHandle(rpcThread);
     CloseHandle(g_stopEvent);
+    g_stopEvent = nullptr;
     DeleteCriticalSection(&g_processLock);
 
     SetStatus(SERVICE_STOPPED);
@@ -328,6 +331,16 @@ void WINAPI ServiceMain(DWORD, LPWSTR*)
 
 int wmain()
 {
+    g_instanceMutex = CreateMutexW(nullptr, TRUE, L"Global\\TrayServiceInstanceMutex");
+    if (!g_instanceMutex || GetLastError() == ERROR_ALREADY_EXISTS)
+    {
+        if (g_instanceMutex)
+        {
+            CloseHandle(g_instanceMutex);
+        }
+        return ERROR_ALREADY_EXISTS;
+    }
+
     SERVICE_TABLE_ENTRYW serviceTable[] =
     {
         { const_cast<LPWSTR>(kServiceName), ServiceMain },
@@ -336,8 +349,10 @@ int wmain()
 
     if (!StartServiceCtrlDispatcherW(serviceTable))
     {
+        CloseHandle(g_instanceMutex);
         return static_cast<int>(GetLastError());
     }
 
+    CloseHandle(g_instanceMutex);
     return 0;
 }
