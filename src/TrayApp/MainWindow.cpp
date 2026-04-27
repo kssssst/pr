@@ -3,9 +3,8 @@
 #include <windows.h>
 #include <shellapi.h>
 #include <commctrl.h>
-#include <thread>
 
-using namespace winrt::TrayApp::implementation;
+using namespace trayapp;
 
 const UINT WM_TRAY_NOTIFICATION = WM_APP + 1;
 const wchar_t* CLASS_NAME = L"TrayAppMessageWindow";
@@ -39,9 +38,6 @@ MainWindow::MainWindow()
         nullptr
     );
     
-    // Регистрируем сообщение для пересоздания панели задач
-    static UINT s_uTaskbarRestart = RegisterWindowMessageW(L"TaskbarCreated");
-    
     if (!m_messageWindow)
     {
         throw std::runtime_error("Failed to create message window");
@@ -57,6 +53,7 @@ MainWindow::~MainWindow()
     {
         DestroyWindow(m_messageWindow);
     }
+    g_pThis = nullptr;
 }
 
 void MainWindow::InitTray()
@@ -109,6 +106,7 @@ void MainWindow::ShowTrayMenu()
     );
     
     DestroyMenu(hMenu);
+    PostMessageW(m_messageWindow, WM_NULL, 0, 0);
     
     switch (cmd)
     {
@@ -129,7 +127,7 @@ void MainWindow::ShowMainWindow()
         if (!m_hWnd)
         {
             WNDCLASSW mainWc = {};
-            mainWc.lpfnWndProc = DefWindowProcW;
+            mainWc.lpfnWndProc = WndProc;
             mainWc.lpszClassName = L"TrayAppMainWindow";
             mainWc.hInstance = GetModuleHandleW(nullptr);
             mainWc.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
@@ -194,12 +192,12 @@ LRESULT CALLBACK MainWindow::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 {
     if (g_pThis)
     {
-        return g_pThis->HandleMessage(msg, wParam, lParam);
+        return g_pThis->HandleMessage(hwnd, msg, wParam, lParam);
     }
     return DefWindowProcW(hwnd, msg, wParam, lParam);
 }
 
-LRESULT MainWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT MainWindow::HandleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     static UINT s_uTaskbarRestart = RegisterWindowMessageW(L"TaskbarCreated");
     
@@ -226,41 +224,34 @@ LRESULT MainWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam)
         return 0;
     }
     
+    case WM_CLOSE:
+        if (hwnd == m_hWnd)
+        {
+            HideMainWindow();
+            return 0;
+        }
+        break;
+
     case WM_DESTROY:
-        PostQuitMessage(0);
-        return 0;
-        
+        if (hwnd == m_messageWindow)
+        {
+            PostQuitMessage(0);
+            return 0;
+        }
+        break;
+
+    case WM_NCDESTROY:
+        if (hwnd == m_hWnd)
+        {
+            m_hWnd = nullptr;
+            m_isVisible = false;
+            return 0;
+        }
+        break;
+
     default:
-        return DefWindowProcW(m_messageWindow, msg, wParam, lParam);
+        break;
     }
-}
 
-HRESULT STDMETHODCALLTYPE MainWindow::QueryInterface(REFIID riid, void** ppvObject)
-{
-    if (!ppvObject) return E_INVALIDARG;
-    
-    if (riid == IID_IUnknown)
-    {
-        *ppvObject = static_cast<IUnknown*>(this);
-        AddRef();
-        return S_OK;
-    }
-    
-    *ppvObject = nullptr;
-    return E_NOINTERFACE;
-}
-
-ULONG STDMETHODCALLTYPE MainWindow::AddRef()
-{
-    return ++m_refCount;
-}
-
-ULONG STDMETHODCALLTYPE MainWindow::Release()
-{
-    ULONG refCount = --m_refCount;
-    if (refCount == 0)
-    {
-        delete this;
-    }
-    return refCount;
+    return DefWindowProcW(hwnd, msg, wParam, lParam);
 }

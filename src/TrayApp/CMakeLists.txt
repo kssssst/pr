@@ -23,7 +23,6 @@ target_link_libraries(TrayApp
         shell32              # Shell API (иконки в трее)
         user32               # User API (окна, сообщения)
         gdi32                # Graphics Device Interface
-        advapi32             # Advanced API (сервисы, реестр)
         comctl32             # Common Controls
 )
 

@@ -40,9 +40,7 @@ message(STATUS "C++ Standard: C++${CMAKE_CXX_STANDARD}")
 message(STATUS "====================================")
 message(STATUS "")
 
-# Добавляем подпроекты
-add_subdirectory(src/rpc)
-add_subdirectory(src/TrayService)
+# Добавляем GUI-приложение
 add_subdirectory(src/TrayApp)
 
 message(STATUS "TrayApp configuration completed successfully!")

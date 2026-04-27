@@ -2,10 +2,15 @@
 #include "MainWindow.h"
 #include <windows.h>
 
-using namespace winrt::TrayApp::implementation;
+using namespace trayapp;
 
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
+    UNREFERENCED_PARAMETER(hInstance);
+    UNREFERENCED_PARAMETER(hPrevInstance);
+    UNREFERENCED_PARAMETER(lpCmdLine);
+    UNREFERENCED_PARAMETER(nCmdShow);
+
     // Проверяем, запущено ли приложение уже
     HANDLE hMutex = CreateMutexW(nullptr, FALSE, L"TrayApp_SingleInstance");
     
@@ -18,11 +23,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     
     try
     {
-        // Создаем главное окно приложения
-        auto mainWindow = new MainWindow();
-        
-        // Сообщение о том, что приложение запущено
-        MessageBoxW(nullptr, L"Приложение запущено! Иконка находится в области уведомлений.", L"TrayApp", MB_ICONINFORMATION);
+        MainWindow mainWindow;
         
         // Обработка сообщений окна
         MSG msg = {};
@@ -31,9 +32,6 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
             TranslateMessage(&msg);
             DispatchMessageW(&msg);
         }
-        
-        // Очистка
-        mainWindow->Release();
     }
     catch (const std::exception& e)
     {
