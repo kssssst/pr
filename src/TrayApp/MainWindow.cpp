@@ -7,6 +7,9 @@
 using namespace trayapp;
 
 const UINT WM_TRAY_NOTIFICATION = WM_APP + 1;
+const UINT ID_TRAY_OPEN = 1;
+const UINT ID_TRAY_EXIT = 2;
+const UINT ID_EXIT_BUTTON = 1001;
 const wchar_t* CLASS_NAME = L"TrayAppMessageWindow";
 
 // Глобальная переменная для доступа к объекту из WndProc
@@ -89,9 +92,9 @@ void MainWindow::ShowTrayMenu()
     HMENU hMenu = CreatePopupMenu();
     if (!hMenu) return;
     
-    AppendMenuW(hMenu, MF_STRING, 1, L"Открыть");
+    AppendMenuW(hMenu, MF_STRING, ID_TRAY_OPEN, L"Открыть");
     AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(hMenu, MF_STRING, 2, L"Выход");
+    AppendMenuW(hMenu, MF_STRING, ID_TRAY_EXIT, L"Выход");
     
     SetForegroundWindow(m_messageWindow);
     
@@ -109,10 +112,10 @@ void MainWindow::ShowTrayMenu()
     
     switch (cmd)
     {
-    case 1: // Открыть
+    case ID_TRAY_OPEN:
         ShowMainWindow();
         break;
-    case 2: // Выход
+    case ID_TRAY_EXIT:
         HandleExit();
         break;
     }
@@ -145,6 +148,31 @@ void MainWindow::ShowMainWindow()
                 GetModuleHandleW(nullptr),
                 nullptr
             );
+
+            if (m_hWnd)
+            {
+                m_exitButton = CreateWindowExW(
+                    0,
+                    L"BUTTON",
+                    L"Выход",
+                    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+                    230, 170, 140, 40,
+                    m_hWnd,
+                    reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_EXIT_BUTTON)),
+                    GetModuleHandleW(nullptr),
+                    nullptr
+                );
+
+                if (m_exitButton)
+                {
+                    SendMessageW(
+                        m_exitButton,
+                        WM_SETFONT,
+                        reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),
+                        TRUE
+                    );
+                }
+            }
         }
         
         if (m_hWnd)
@@ -226,6 +254,14 @@ LRESULT MainWindow::HandleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
         }
         return 0;
     }
+
+    case WM_COMMAND:
+        if (LOWORD(wParam) == ID_EXIT_BUTTON)
+        {
+            HandleExit();
+            return 0;
+        }
+        break;
     
     case WM_CLOSE:
         if (hwnd == m_hWnd)
@@ -246,6 +282,7 @@ LRESULT MainWindow::HandleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
     case WM_NCDESTROY:
         if (hwnd == m_hWnd)
         {
+            m_exitButton = nullptr;
             m_hWnd = nullptr;
             m_isVisible = false;
             return 0;

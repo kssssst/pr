@@ -28,7 +28,7 @@ target_link_libraries(TrayApp
 
 # Параметры компиляции
 if(MSVC)
-    target_compile_options(TrayApp PRIVATE /W4)
+    target_compile_options(TrayApp PRIVATE /W4 /utf-8)
     
     # Отключаем предупреждение о deprecated функциях
     target_compile_definitions(TrayApp PRIVATE _CRT_SECURE_NO_WARNINGS)
