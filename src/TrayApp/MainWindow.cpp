@@ -30,9 +30,9 @@ MainWindow::MainWindow()
         0,
         CLASS_NAME,
         L"TrayApp Message Window",
-        0,
+        WS_OVERLAPPED,
         0, 0, 0, 0,
-        HWND_MESSAGE,
+        nullptr,
         nullptr,
         GetModuleHandleW(nullptr),
         nullptr
@@ -95,12 +95,11 @@ void MainWindow::ShowTrayMenu()
     
     SetForegroundWindow(m_messageWindow);
     
-    UINT cmd = TrackPopupMenu(
+    UINT cmd = TrackPopupMenuEx(
         hMenu,
-        TPM_BOTTOMALIGN | TPM_LEFTALIGN | TPM_RETURNCMD,
+        TPM_BOTTOMALIGN | TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD,
         pt.x,
         pt.y,
-        0,
         m_messageWindow,
         nullptr
     );
@@ -212,12 +211,16 @@ LRESULT MainWindow::HandleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
     {
     case WM_TRAY_NOTIFICATION:
     {
-        switch (lParam)
+        const UINT trayEvent = LOWORD(lParam);
+
+        switch (trayEvent)
         {
         case WM_LBUTTONUP:
+        case NIN_SELECT:
             ShowMainWindow();
             break;
         case WM_RBUTTONUP:
+        case WM_CONTEXTMENU:
             ShowTrayMenu();
             break;
         }
