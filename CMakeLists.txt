@@ -47,7 +47,6 @@ message(STATUS "C++ Standard: C++${CMAKE_CXX_STANDARD}")
 message(STATUS "====================================")
 message(STATUS "")
 
-add_subdirectory(src/rpc)
 add_subdirectory(src/TrayService)
 add_subdirectory(src/TrayApp)
 

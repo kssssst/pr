@@ -7,13 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(TrayService
     main.cpp
-    $<TARGET_OBJECTS:TrayRpcServer>
-)
-
-add_dependencies(TrayService TrayRpcServer)
-
-target_include_directories(TrayService PRIVATE
-    ${CMAKE_BINARY_DIR}/generated/rpc
 )
 
 target_compile_definitions(TrayService PRIVATE
