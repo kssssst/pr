@@ -19,6 +19,7 @@ set(TRAYAPP_SOURCES
     pch.h
 )
 
+
 # Создаем исполняемый файл
 add_executable(TrayApp WIN32 ${TRAYAPP_SOURCES})
 

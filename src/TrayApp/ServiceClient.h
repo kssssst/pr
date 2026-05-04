@@ -6,3 +6,4 @@ namespace trayapp
     bool IsParentProcessTrayService();
     bool StopTrayServiceViaRpc();
 }
+
