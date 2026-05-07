@@ -28,4 +28,14 @@ The MSI is produced under `TrayAppInstaller\src\bin\Release`.
 
 `.github/workflows/build.yml` is intentionally inside this standalone folder. When this folder is moved to a repository or branch that contains only the installer, keep it at the repository root.
 
-The workflow checks out the installer and then checks out the TrayApp source from `APP_REPOSITORY` at `APP_REF` (default: the same GitHub repository, `main`), builds TrayApp for ARM64, generates the WiX payload file, builds the MSI, and uploads it as `TrayAppInstaller-ARM64`.
+The workflow builds TrayApp from the current repository by default, generates the WiX payload file, builds the MSI, and uploads it as `TrayAppInstaller-ARM64`.
+
+When this installer lives in a separate repository, configure one of these and the workflow will perform an extra checkout into `app-source`:
+
+1. Set repository variables `APP_SOURCE_REPOSITORY` and optionally `APP_SOURCE_REF`.
+2. Or start the workflow manually with `app_repository` and `app_ref`.
+
+Default behavior:
+
+- If no external source repository is configured, CMake builds from the current repository root.
+- If an external source repository is configured, the workflow checks it out into `app-source` and builds from there.
