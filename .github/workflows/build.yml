@@ -6,6 +6,10 @@ name: Build TrayApp Installer
     branches: [ inst ]
   workflow_dispatch:
     inputs:
+      app_repository:
+        description: 'Owner/repository of the TrayApp source repository to build'
+        required: false
+        default: ''
       app_ref:
         description: 'Git ref of the TrayApp source repository to build'
         required: false
@@ -16,7 +20,7 @@ name: Build TrayApp Installer
         default: '1.0.0'
 
 env:
-  APP_REPOSITORY: ${{ github.repository }}
+  APP_REPOSITORY: ${{ inputs.app_repository || vars.APP_REPOSITORY || github.repository }}
   APP_REF: ${{ inputs.app_ref || github.ref_name }}
   PRODUCT_VERSION: ${{ inputs.product_version || '1.0.0' }}
 
@@ -36,6 +40,13 @@ jobs:
           repository: ${{ env.APP_REPOSITORY }}
           ref: ${{ env.APP_REF }}
           path: app-source
+
+      - name: Validate TrayApp source
+        run: |
+          if (-not (Test-Path app-source\CMakeLists.txt)) {
+            Write-Error "TrayApp source checkout '$env:APP_REPOSITORY' at ref '$env:APP_REF' does not contain CMakeLists.txt. Set the APP_REPOSITORY repository variable or pass workflow_dispatch input app_repository to the repository that contains TrayApp sources."
+          }
+        shell: powershell
 
       - name: Configure TrayApp for ARM64
         run: |

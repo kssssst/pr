@@ -28,4 +28,6 @@ The MSI is produced under `TrayAppInstaller\src\bin\Release`.
 
 `.github/workflows/build.yml` is intentionally inside this standalone folder. When this folder is moved to a repository or branch that contains only the installer, keep it at the repository root.
 
-The workflow checks out the installer and then checks out the TrayApp source from `APP_REPOSITORY` at `APP_REF` (default: the same GitHub repository, current workflow branch; `inst` for manual runs), builds TrayApp for ARM64, generates the WiX payload file, builds the MSI, and uploads it as `TrayAppInstaller-ARM64`.
+The workflow checks out the installer and then checks out the TrayApp source from `APP_REPOSITORY` at `APP_REF` (default ref: the current workflow branch; `inst` for manual runs), builds TrayApp for ARM64, generates the WiX payload file, builds the MSI, and uploads it as `TrayAppInstaller-ARM64`.
+
+For standalone installer repositories, configure the GitHub Actions repository variable `APP_REPOSITORY` with the real TrayApp source repository in `owner/repository` format, or pass `app_repository` when running the workflow manually.
