@@ -59,7 +59,31 @@ function Get-RelativePayloadPath {
     $baseUri = [System.Uri]::new($baseFullPath)
     $pathUri = [System.Uri]::new($pathFullPath)
     $relativeUri = $baseUri.MakeRelativeUri($pathUri).ToString()
-    return [System.Uri]::UnescapeDataString($relativeUri).Replace('/', [System.IO.Path]::DirectorySeparatorChar)
+    return [System.Uri]::UnescapeDataString($relativeUri).Replace('\', '/').TrimStart('/')
+}
+
+function Get-RelativeDirectoryName {
+    param([string] $RelativePath)
+
+    $normalizedPath = $RelativePath.Replace('\', '/').Trim('/')
+    $lastSeparator = $normalizedPath.LastIndexOf('/')
+    if ($lastSeparator -lt 0) {
+        return ''
+    }
+
+    return $normalizedPath.Substring(0, $lastSeparator)
+}
+
+function Get-RelativeFileName {
+    param([string] $RelativePath)
+
+    $normalizedPath = $RelativePath.Replace('\', '/').Trim('/')
+    $lastSeparator = $normalizedPath.LastIndexOf('/')
+    if ($lastSeparator -lt 0) {
+        return $normalizedPath
+    }
+
+    return $normalizedPath.Substring($lastSeparator + 1)
 }
 
 function Convert-ToXmlAttribute {
@@ -70,7 +94,11 @@ function Convert-ToXmlAttribute {
 $relativeDirectories = $files |
     ForEach-Object {
         $relativeFile = Get-RelativePayloadPath -BasePath $payloadRoot -Path $_.FullName
-        [System.IO.Path]::GetDirectoryName($relativeFile)
+        $relativeDir = Get-RelativeDirectoryName $relativeFile
+        while ($relativeDir) {
+            $relativeDir
+            $relativeDir = Get-RelativeDirectoryName $relativeDir
+        }
     } |
     Where-Object { $_ } |
     Sort-Object -Unique
@@ -90,7 +118,7 @@ if ($relativeDirectories) {
 
     foreach ($dir in $relativeDirectories) {
         if ($dir -notmatch '[\\/]' ) {
-            $name = Convert-ToXmlAttribute ([System.IO.Path]::GetFileName($dir))
+            $name = Convert-ToXmlAttribute (Get-RelativeFileName $dir)
             $lines.Add("      <Directory Id=`"$($directoryIds[$dir])`" Name=`"$name`" />")
         }
     }
@@ -98,10 +126,15 @@ if ($relativeDirectories) {
     $lines.Add('    </DirectoryRef>')
 
     foreach ($dir in $relativeDirectories) {
-        $parent = [System.IO.Path]::GetDirectoryName($dir)
+        $parent = Get-RelativeDirectoryName $dir
         if ($parent) {
-            $name = Convert-ToXmlAttribute ([System.IO.Path]::GetFileName($dir))
-            $lines.Add("    <DirectoryRef Id=`"$($directoryIds[$parent])`">")
+            $parentDirectoryId = $directoryIds[$parent]
+            if (-not $parentDirectoryId) {
+                throw "Internal error: no WiX directory id was generated for payload directory '$parent'."
+            }
+
+            $name = Convert-ToXmlAttribute (Get-RelativeFileName $dir)
+            $lines.Add("    <DirectoryRef Id=`"$parentDirectoryId`">")
             $lines.Add("      <Directory Id=`"$($directoryIds[$dir])`" Name=`"$name`" />")
             $lines.Add('    </DirectoryRef>')
         }
@@ -113,13 +146,17 @@ if ($relativeDirectories) {
 $components = New-Object System.Collections.Generic.List[string]
 $filesByDirectory = $files | Group-Object {
     $relativeFile = Get-RelativePayloadPath -BasePath $payloadRoot -Path $_.FullName
-    $relativeDir = [System.IO.Path]::GetDirectoryName($relativeFile)
+    $relativeDir = Get-RelativeDirectoryName $relativeFile
     if ($relativeDir) { $relativeDir } else { '.' }
 }
 
 $lines.Add('  <Fragment>')
 foreach ($group in $filesByDirectory) {
     $directoryRef = if ($group.Name -eq '.') { 'INSTALLFOLDER' } else { $directoryIds[$group.Name] }
+    if (-not $directoryRef) {
+        throw "Internal error: no WiX directory id was generated for payload directory '$($group.Name)'."
+    }
+
     $lines.Add("    <DirectoryRef Id=`"$directoryRef`">")
 
     foreach ($file in $group.Group) {
@@ -128,7 +165,7 @@ foreach ($group in $filesByDirectory) {
         $fileId = 'fil_' + (Convert-ToWixId $relativeFile)
         $source = '$(var.PayloadDir)\' + ($relativeFile -replace '/', '\')
         $source = Convert-ToXmlAttribute $source
-        $name = Convert-ToXmlAttribute $file.Name
+        $name = Convert-ToXmlAttribute (Get-RelativeFileName $relativeFile)
         $components.Add($componentId) | Out-Null
 
         $lines.Add("      <Component Id=`"$componentId`" Guid=`"*`">")
