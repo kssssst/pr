@@ -3,13 +3,13 @@ name: Build TrayApp Installer
 'on':
   push:
   pull_request:
-    branches: [ main ]
+    branches: [ inst ]
   workflow_dispatch:
     inputs:
       app_ref:
         description: 'Git ref of the TrayApp source repository to build'
         required: false
-        default: 'main'
+        default: 'inst'
       product_version:
         description: 'MSI product version'
         required: false
@@ -17,7 +17,7 @@ name: Build TrayApp Installer
 
 env:
   APP_REPOSITORY: ${{ github.repository }}
-  APP_REF: ${{ inputs.app_ref || 'main' }}
+  APP_REF: ${{ inputs.app_ref || github.ref_name }}
   PRODUCT_VERSION: ${{ inputs.product_version || '1.0.0' }}
 
 jobs:
