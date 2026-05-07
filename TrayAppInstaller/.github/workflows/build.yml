@@ -1,0 +1,92 @@
+name: Build TrayApp Installer
+
+'on':
+  push:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      app_ref:
+        description: 'Git ref of the TrayApp source repository to build'
+        required: false
+        default: 'main'
+      product_version:
+        description: 'MSI product version'
+        required: false
+        default: '1.0.0'
+
+env:
+  APP_REPOSITORY: ${{ github.repository }}
+  APP_REF: ${{ inputs.app_ref || 'main' }}
+  PRODUCT_VERSION: ${{ inputs.product_version || '1.0.0' }}
+
+jobs:
+  build-installer:
+    runs-on: windows-11-arm
+
+    steps:
+      - name: Checkout installer
+        uses: actions/checkout@v4
+        with:
+          path: installer
+
+      - name: Checkout TrayApp source
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.APP_REPOSITORY }}
+          ref: ${{ env.APP_REF }}
+          path: app-source
+
+      - name: Configure TrayApp for ARM64
+        run: |
+          cmake --version
+          cmake -S app-source -B app-build `
+            -G "Visual Studio 17 2022" `
+            -A ARM64 `
+            -DCMAKE_BUILD_TYPE=Release
+        shell: powershell
+
+      - name: Build TrayApp Release
+        run: cmake --build app-build --config Release --verbose
+        shell: powershell
+
+      - name: Prepare installer payload
+        run: |
+          installer\scripts\Prepare-Payload.ps1 `
+            -AppBuildBin app-build\bin `
+            -PayloadDir installer\src\payload
+        shell: powershell
+
+      - name: Generate WiX payload
+        run: |
+          installer\scripts\Generate-WixPayload.ps1 `
+            -PayloadDir installer\src\payload `
+            -OutputPath installer\src\Payload.generated.wxs
+        shell: powershell
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build MSI
+        run: |
+          dotnet build installer\src\TrayAppInstaller.wixproj `
+            -c Release `
+            -p:ProductVersion=${{ env.PRODUCT_VERSION }}
+        shell: powershell
+
+      - name: Collect installer artifacts
+        run: |
+          New-Item -ItemType Directory -Force -Path installer-artifacts | Out-Null
+          Get-ChildItem installer\src\bin\Release -Filter *.msi -Recurse |
+            Copy-Item -Destination installer-artifacts\ -Verbose
+          Get-ChildItem installer-artifacts | Format-Table Name, Length
+        shell: powershell
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrayAppInstaller-ARM64
+          path: installer-artifacts/
+          retention-days: 90
