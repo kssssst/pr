@@ -1,0 +1,82 @@
+name: Build TrayApp Installer
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      product_version:
+        description: 'MSI product version'
+        required: false
+        default: '1.0.0'
+
+env:
+  PRODUCT_VERSION: ${{ inputs.product_version || '1.0.0' }}
+
+jobs:
+  build-installer:
+    runs-on: windows-11-arm
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Configure TrayApp for ARM64
+        run: |
+          cmake --version
+          cmake -S . -B app-build `
+            -G "Visual Studio 17 2022" `
+            -A ARM64 `
+            -DCMAKE_BUILD_TYPE=Release
+        shell: powershell
+
+      - name: Build TrayApp Release
+        run: cmake --build app-build --config Release --verbose
+        shell: powershell
+
+      - name: Prepare installer payload
+        run: |
+          TrayAppInstaller\scripts\Prepare-Payload.ps1 `
+            -AppBuildBin app-build `
+            -PayloadDir TrayAppInstaller\src\payload
+        shell: powershell
+
+      - name: Generate WiX payload
+        run: |
+          TrayAppInstaller\scripts\Generate-WixPayload.ps1 `
+            -PayloadDir TrayAppInstaller\src\payload `
+            -OutputPath TrayAppInstaller\src\Payload.generated.wxs
+        shell: powershell
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build MSI
+        run: |
+          New-Item -ItemType Directory -Force -Path installer-artifacts | Out-Null
+          $artifactDir = (Resolve-Path installer-artifacts).Path
+          dotnet build TrayAppInstaller\src\TrayAppInstaller.wixproj `
+            -c Release `
+            -p:ProductVersion="$env:PRODUCT_VERSION" `
+            -p:OutputName=TrayAppSetup `
+            -p:OutputPath="$artifactDir\"
+        shell: powershell
+
+      - name: Verify installer artifact
+        run: |
+          $installerMsi = Join-Path (Resolve-Path installer-artifacts).Path 'TrayAppSetup.msi'
+          if (-not (Test-Path -LiteralPath $installerMsi)) {
+            throw "TrayApp installer MSI was not produced."
+          }
+          Get-Item -LiteralPath $installerMsi | Format-Table FullName, Length
+        shell: powershell
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrayAppInstaller-ARM64
+          path: installer-artifacts/TrayAppSetup.msi
+          if-no-files-found: error
+          retention-days: 90
